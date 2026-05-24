@@ -29,7 +29,7 @@ setup(
     install_requires=['setuptools'],
     zip_safe=True,
     maintainer='TayasanM',
-    maintainer_email='your_email@example.com',
+    maintainer_email='malinda19900407@gmail.com',
     description='ROS 2 KCF follower for ROSMaster M1',
     license='MIT',
     entry_points={
