@@ -1,0 +1,14 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# ROS 2 build artifacts
+build/
+install/
+log/
+
+# Deep learning weights & engines
+*.pt
+*.engine
+*.onnx
