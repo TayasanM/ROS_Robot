@@ -51,9 +51,9 @@ class DynamicPID:
         self.prev_error = 0.0
 
 
-class YoloTrackMapPIDNode(Node):
+class YoloTrackVoicePIDNode(Node):
     def __init__(self):
-        super().__init__('yolo_track_map_pid')
+        super().__init__('yolo_track_voice_pid')
         self.bridge = CvBridge()
         self.model = YOLO("yolov8n.pt")
 
@@ -85,7 +85,10 @@ class YoloTrackMapPIDNode(Node):
 
         self.add_on_set_parameters_callback(self.parameter_update_callback)
 
+        # Boot into IDLE state until speech command arrives
         self.tracked_target_id = -1
+        self.last_tracked_id = -1
+        self.resume_requested = False
         self.target_name_lock = {}
         self.image_center_x = 320.0
 
@@ -124,7 +127,7 @@ class YoloTrackMapPIDNode(Node):
         self.latest_display = None
         self.last_infer = 0.0
 
-        self.get_logger().info(f"Terminal/Cmd-line Tracking Active. Auto-lock enabled. Output: {cmd_topic}")
+        self.get_logger().info(f"Voice Tracking Mode Active (Waiting for voice command). Topic: {cmd_topic}")
 
     def parameter_update_callback(self, params):
         for param in params:
@@ -149,10 +152,23 @@ class YoloTrackMapPIDNode(Node):
         return SetParametersResult(successful=True)
 
     def tracker_id_callback(self, msg):
-        self.tracked_target_id = msg.data
+        req_id = msg.data
         self.angular_pid.reset()
         self.linear_pid.reset()
-        self.get_logger().info(f"Manual Terminal Target Set to ID: {self.tracked_target_id}")
+
+        if req_id == -1:
+            self.tracked_target_id = -1
+            self.resume_requested = False
+            self.cmd_pub.publish(Twist())
+            self.get_logger().info("STOPPED (IDLE). Motors halted.")
+        elif req_id == -2:
+            self.resume_requested = True
+            self.get_logger().info("RESUME / AUTO-LOCK received.")
+        else:
+            self.tracked_target_id = req_id
+            self.last_tracked_id = req_id
+            self.resume_requested = False
+            self.get_logger().info(f"Switched to Target ID: {self.tracked_target_id}")
 
     def camera_info_callback(self, msg):
         self.fx = msg.k[0]
@@ -199,9 +215,16 @@ class YoloTrackMapPIDNode(Node):
                 track_ids = results[0].boxes.id.int().cpu().numpy()
                 clss = results[0].boxes.cls.int().cpu().numpy()
 
-                # Auto-lock onto the first visible target for immediate terminal operation
-                if self.tracked_target_id == -1 and len(track_ids) > 0:
-                    self.tracked_target_id = int(track_ids[0])
+                # Smart Resume logic
+                if self.resume_requested and len(track_ids) > 0:
+                    self.resume_requested = False
+                    if self.last_tracked_id in track_ids:
+                        self.tracked_target_id = self.last_tracked_id
+                    else:
+                        centers_x = [(b[0] + b[2]) / 2.0 for b in boxes]
+                        closest_idx = int(np.argmin(np.abs(np.array(centers_x) - self.image_center_x)))
+                        self.tracked_target_id = int(track_ids[closest_idx])
+                        self.last_tracked_id = self.tracked_target_id
 
                 for box, track_id, cls_id in zip(boxes, track_ids, clss):
                     x1, y1, x2, y2 = map(int, box)
@@ -233,7 +256,7 @@ class YoloTrackMapPIDNode(Node):
                         raw_z = np.percentile(valid, 20)
                         z_m = float(raw_z / 1000.0) if depth_img.dtype == np.uint16 else float(raw_z)
 
-                    is_active = (tid == self.tracked_target_id)
+                    is_active = (self.tracked_target_id != -1 and tid == self.tracked_target_id)
                     box_color = (255, 120, 0) if is_active else (0, 255, 0)
                     cv.rectangle(rgb_img, (x1, y1), (x2, y2), box_color, 2)
                     status_str = " [TRACKING]" if is_active else ""
@@ -260,6 +283,7 @@ class YoloTrackMapPIDNode(Node):
                     # Closed-loop PID
                     if is_active and 0.30 < z_m < 4.0:
                         target_found = True
+                        self.last_tracked_id = tid
 
                         norm_error_x = (self.image_center_x - u) / self.image_center_x
                         if abs(norm_error_x) > 0.05:
@@ -287,7 +311,14 @@ class YoloTrackMapPIDNode(Node):
             else:
                 self.cmd_pub.publish(Twist())
 
-            osd_text = f"Manual ID: {self.tracked_target_id} | CmdX:{twist.linear.x:.2f} | CmdZ:{twist.angular.z:.2f}"
+            if self.tracked_target_id == -1:
+                state_label = "State: IDLE (Waiting Voice)"
+            elif target_found:
+                state_label = f"Voice Target: {self.tracked_target_id}"
+            else:
+                state_label = f"Searching for ID: {self.tracked_target_id}"
+
+            osd_text = f"{state_label} | CmdX:{twist.linear.x:.2f} | CmdZ:{twist.angular.z:.2f}"
             cv.putText(rgb_img, osd_text, (10, 25), cv.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
             self.latest_display = rgb_img
 
@@ -321,13 +352,13 @@ class YoloTrackMapPIDNode(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = YoloTrackMapPIDNode()
+    node = YoloTrackVoicePIDNode()
     try:
         while rclpy.ok():
             rclpy.spin_once(node, timeout_sec=0.005)
             node.process_frame()
             if node.latest_display is not None:
-                cv.imshow("YOLO Tracking (Terminal Mode)", node.latest_display)
+                cv.imshow("YOLO Tracking (Voice Mode)", node.latest_display)
             key = cv.waitKey(1)
             if key == 27 or key == ord('q'):
                 break

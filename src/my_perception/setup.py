@@ -14,14 +14,16 @@ setup(
     install_requires=['setuptools'],
     zip_safe=True,
     maintainer='jetson',
-    maintainer_email='yahboom@todo.todo',
-    description='YOLO 3D Grounding and Perception Node',
+    maintainer_email='malinda19900407@gmail.com',
+    description='YOLO 3D Grounding, Perception, and Voice Control Package',
     license='Apache-2.0',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
             'yolo_grounding = my_perception.yolo_grounding:main',
             'yolo_track_map_pid = my_perception.yolo_track_map_pid:main',
+            'yolo_track_voice_pid = my_perception.yolo_track_voice_pid:main',
+            'voice_tracker_node = my_perception.voice_tracker_node:main',
             'cmd_vel_mux = my_perception.cmd_vel_mux:main',
         ],
     },

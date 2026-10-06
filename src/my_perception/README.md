@@ -41,3 +41,13 @@ End-to-end edge perception, temporal object tracking, 3D map grounding, and clos
 1. **Start the base driver & camera** (in separate terminals):
 2. **Start the Velocity Multiplexer**:3. **Start the Joystick teleoperation** (optional, remapped):4. **Launch the YOLO Tracking Node**:
 5. **Tune PID gains in real-time**:
+
+### Execution Modes
+
+#### Mode 1: Terminal / Command-line Driven Tracking
+Auto-locks onto the first detected target or follows manual `ros2 topic pub` commands:
+#### Mode 2: Voice-Controlled Tracking
+Starts in IDLE, waiting for spoken commands ("Robot, follow ID 2", "Robot, stop", "Robot, resume"):
+
+# Terminal 2: Run voice perception follower
+ros2 run my_perception yolo_track_voice_pid
