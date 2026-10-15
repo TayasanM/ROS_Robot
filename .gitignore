@@ -12,3 +12,9 @@ log/
 *.pt
 *.engine
 *.onnx
+__pycache__/
+*.pyc
+build/
+install/
+log/
+.vscode/
