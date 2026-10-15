@@ -8,7 +8,7 @@ ROS 2 workspace for Yahboom ROSMASTER M1 mobile robot projects running ROS 2 Hum
 
 ### 1. `rosmaster_m1`
 Classic computer vision tracking routines:
-- **KCF Object Following**: Kernelized Correlation Filters visual tracker with Astra depth camera ranging.
+- **KCF Object Following**: Kernelized Correlation Filters visual tracker with Nuwa depth camera ranging.
 - **HSV Color Following**: Real-time HSV color segmentation and centroid tracking.
 
 ### 2. `my_perception`
@@ -57,3 +57,4 @@ ros2 launch rosmaster_m1 color_follow.launch.py
 
 4. **Start the YOLO Tracking & 3D Grounding Node**:
 5. **Open Dynamic Parameter Reconfigure**:
+6. **Strat the voice node**:
