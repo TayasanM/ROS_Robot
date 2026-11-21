@@ -1,0 +1,36 @@
+charging_position:
+  name: 'charging_position'
+  position:
+    x: 0.00
+    y: 0.00
+    z: 0.0
+  orientation:
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 0.9990476342806587
+
+
+room1:
+  name: 'room1'
+  position:
+    x: 1.4208577871322632
+    y: -4.309924602508545
+    z: 0.0
+  orientation:
+    x: 0.0
+    y: 0.0
+    z: -0.009642889641949532
+    w: 0.9999535062588426
+
+kitchen:
+  name: 'kitchen'
+  position:
+    x: -3.99546217918396
+    y: -1.9591920375823975
+    z: 0.0
+  orientation:
+    x: 0.0
+    y: 0.0
+    z: -0.01859562388643428
+    w: 0.9998270864365869
